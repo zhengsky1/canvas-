@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Document</title>
+</head>
+
+<body>
+  <canvas id="cv"></canvas>
+
+  <!--引入全局对象  -->
+  <script src="./js/fly.js"></script>
+  <!--引入小鸟对象  -->
+  <script src="./js/bird.js"></script>
+  <!--引入天空对象  -->
+  <script src="./js/sky.js"></script>
+  <!--引入陆地对象  -->
+  <script src="./js/land.js"></script>
+  <!--引入管道对象  -->
+  <script src="./js/pipe.js"></script>
+  <script>
+    var cv = document.getElementById('cv');
+    cv.width = 800;
+    cv.height = 600;
+    cv.style.border = '1px solid red';
+
+    var context = cv.getContext('2d');
+    var toRadian = function (angle) {
+      return angle / 180 * Math.PI;
+    };
+    
+    // 游戏的图片资源
+    var imgSrcList = ['birds', 'land', 'pipe1', 'pipe2', 'sky'];
+    // 用来控制游戏的开始和结束
+    var isStart = true;
+    Fly.loadImage(imgSrcList, function (imgList) {
+      // 只要这个函数调用了，就说明所有的图片都加载完成了！！！
+
+      // 创建小鸟对象
+      var bird = new Fly.Bird({
+        img: imgList.birds
+      });
+
+      // 存储游戏中所有的角色对象( 天空/陆地/管道 )
+      var roles = [];
+
+      // 创建天空对象
+      for (var i = 0; i < 2; i++) {
+        var sky = new Fly.Sky({
+          img: imgList.sky,
+          x: imgList.sky.width * i
+        });
+        roles.push(sky);
+      }
+
+      // 创建管道对象
+      for (var i = 0; i < 6; i++) {
+        var pipe = new Fly.Pipe({
+          imgTop: imgList.pipe2,
+          imgBottom: imgList.pipe1,
+          x: imgList.pipe2.width * 3 * i + 300
+        });
+
+        roles.push(pipe);
+      }
+
+      // 创建陆地对象
+      for (var i = 0; i < 4; i++) {
+        var land = new Fly.Land({
+          img: imgList.land,
+          x: imgList.land.width * i,
+          y: (imgList.sky.height - imgList.land.height)
+        });
+
+        roles.push(land);
+      }
+
+      var lastFrameTime = new Date(),   // 上一帧的时间
+        curFrameTime = 0,             // 当前帧时间
+        delta = 0;                    // 两帧时间间隔
+
+      (function render() {
+        curFrameTime = new Date();
+        // delta 表示两帧时间间隔
+        delta = curFrameTime - lastFrameTime;
+        lastFrameTime = curFrameTime;
+
+        // 清空画布
+        context.clearRect(0, 0, cv.width, cv.height);
+        // 开启新路径
+        context.beginPath();
+        // 保存状态
+        context.save();
+
+        // 绘制所有的角色
+        roles.forEach(function (role) {
+          role.draw(delta);
+        });
+
+        // 绘制小鸟
+        bird.draw(delta);
+
+        // 碰撞检测
+        // 1 小鸟天空的顶端发生碰撞
+        // 2 小鸟与陆地发生碰撞
+        // 3 小鸟与管道发生碰撞
+        if (bird.y <= 5 || bird.y >= (imgList.sky.height - imgList.land.height) || context.isPointInPath(bird.x, bird.y)) {
+          isStart = false;
+        }
+
+        // 恢复状态
+        context.restore();
+
+        if (isStart) {
+          requestAnimationFrame(render);
+        }
+      })();
+
+      // 小鸟跳动
+      cv.addEventListener('click', function () {
+        bird.speed = -0.3;
+      });
+    });
+  </script>
+</body>
+
+</html>
